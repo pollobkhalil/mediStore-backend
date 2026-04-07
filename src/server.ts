@@ -19,7 +19,7 @@ async function main() {
     });
   } catch (err) {
     console.error('❌ Failed to start server:', err);
-    await prisma.$disconnect(); // কানেকশন ফেইল করলে ডিসকানেক্ট করা
+    await prisma.$disconnect(); 
     process.exit(1);
   }
 }

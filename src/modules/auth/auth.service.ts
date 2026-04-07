@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt, { JwtPayload, Secret } from 'jsonwebtoken';
 
-import { TLoginUser, TRegisterUser } from './auth.interface';
+
 import { prisma } from '../../lib/prisma';
 
 /**
@@ -9,7 +9,7 @@ import { prisma } from '../../lib/prisma';
  * @param payload - User registration data
  * @returns The newly created user object (excluding password)
  */
-const registerUserIntoDB = async (payload: TRegisterUser) => {
+const registerUserIntoDB = async (payload: any) => {
   // Hash the password before saving to DB
   const hashedPassword = await bcrypt.hash(payload.password, 12);
 
@@ -36,7 +36,7 @@ const registerUserIntoDB = async (payload: TRegisterUser) => {
  * @param payload - User login credentials
  * @returns Access token and Refresh token
  */
-const loginUser = async (payload: TLoginUser) => {
+const loginUser = async (payload: any) => {
   // 1. Check if user exists
   const user = await prisma.user.findUniqueOrThrow({
     where: {

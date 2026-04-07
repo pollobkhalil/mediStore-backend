@@ -5,8 +5,13 @@ import { AuthService } from './auth.service';
  * Controller to handle user registration
  */
 const registerUser = async (req: Request, res: Response) => {
+  
+  console.log(req.body);
+
   try {
     const result = await AuthService.registerUserIntoDB(req.body);
+
+
 
     res.status(201).json({
       success: true,
