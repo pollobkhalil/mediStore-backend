@@ -1,37 +1,16 @@
 import { Router } from 'express';
-
-
-type TModuleRoutes = {
-  path: string;
-  route: Router;
-};
+import { AuthRoutes } from '../modules/auth/auth.route';
 
 const router = Router();
 
-const moduleRoutes: TModuleRoutes[] = [
-  {
-    path: '/users',
-    route: UserRoutes,
-  },
-  {
-    path: '/cars',
-    route: CarRoutes,
-  },
-  {
-    path: '/bids',
-    route: BidRoutes,
-  },
+/**
+ * Define your module routes here.
+ * As you create more modules (Medicine, Order), add them to this array.
+ */
+const moduleRoutes = [
   {
     path: '/auth',
     route: AuthRoutes,
-  },
-  {
-    path: '/rents',
-    route: RentRoutes,
-  },
-  {
-    path: '/payments',
-    route: PaymentRoutes,
   },
 ];
 
