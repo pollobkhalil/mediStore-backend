@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+// --- Enums ---
+enum UserRole {
+  ADMIN
+  SELLER
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+// --- Models ---
+
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  password  String
+  role      UserRole   @default(CUSTOMER)
+  status    UserStatus @default(ACTIVE)
+  isDeleted Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  medicines Medicine[] // Medicines added by the Seller
+  orders    Order[]    // Orders placed by the Customer
+  reviews   Review[]   // Reviews left by the Customer
+
+  @@map("users")
+}
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  medicines Medicine[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("categories")
+}
+
+model Medicine {
+  id              String   @id @default(uuid())
+  name            String
+  brand           String   // Manufacturer/Brand name
+  price           Float
+  stockQuantity   Int
+  expiryDate      DateTime
+  description     String?
+  image           String?
+  isPrescription  Boolean  @default(false)
+  
+  // Relations
+  sellerId        String
+  seller          User     @relation(fields: [sellerId], references: [id])
+  categoryId      String
+  category        Category @relation(fields: [categoryId], references: [id])
+  
+  orderItems      OrderItem[]
+  reviews         Review[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("medicines")
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  totalAmount     Float
+  status          OrderStatus @default(PENDING)
+  shippingAddress String
+  contactNumber   String
+  
+  // Relations
+  customerId      String
+  customer        User        @relation(fields: [customerId], references: [id])
+  orderItems      OrderItem[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+// Critical for E-commerce: To track which medicines are in which order
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+  medicineId String
+  medicine   Medicine @relation(fields: [medicineId], references: [id])
+  quantity   Int
+  price      Float    // Price at the time of purchase
+
+  @@map("order_items")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  rating     Int      // e.g., 1 to 5
+  comment    String?
+  
+  customerId String
+  customer   User     @relation(fields: [customerId], references: [id])
+  medicineId String
+  medicine   Medicine @relation(fields: [medicineId], references: [id])
+
+  createdAt  DateTime @default(now())
+
+  @@map("reviews")
+}
