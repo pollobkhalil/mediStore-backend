@@ -1,23 +1,13 @@
 import "dotenv/config";
-import { defineConfig } from "@prisma/config";
+import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
-  // Prisma 7 uses 'schema' as a direct string path
   schema: "prisma/schema.prisma",
-
-
-  
-  
-
-
-  
-  migrate: {
-    url: process.env.DATABASE_URL as string,
+  migrations: {
+    path: "prisma/migrations",
   },
-
- 
   
   datasource: {
-    url: process.env.DATABASE_URL as string,
+    url: env("DATABASE_URL"),
   },
 });
