@@ -71,6 +71,7 @@ model Medicine {
   description     String?
   image           String?
   isPrescription  Boolean  @default(false)
+  isDeleted       Boolean  @default(false)
   
   // Relations
   sellerId        String
