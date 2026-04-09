@@ -47,6 +47,7 @@ const loginUser = async (payload: any) => {
 
   // Generate session token
   const jwtPayload = {
+    id: user.id,
     email: user.email,
     role: user.role,
   };

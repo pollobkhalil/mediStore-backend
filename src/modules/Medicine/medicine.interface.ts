@@ -10,3 +10,13 @@ export type TMedicine = {
   categoryId: string;
   sellerId: string;
 };
+
+// Define expected query parameters
+export type TMedicineQuery = {
+  searchTerm?: string;
+  category?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  page?: string;
+  limit?: string;
+};
