@@ -1,3 +1,3 @@
-export type TUser = {
+export type TMedicine = {
     // Add interface properties here
     };

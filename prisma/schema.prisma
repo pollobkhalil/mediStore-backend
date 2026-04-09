@@ -89,7 +89,7 @@ model Medicine {
 
 model Order {
   id              String      @id @default(uuid())
-  totalAmount     Float
+  totalAmount     Float @default(0)
   status          OrderStatus @default(PENDING)
   shippingAddress String
   contactNumber   String
@@ -127,7 +127,7 @@ model Review {
   customer   User     @relation(fields: [customerId], references: [id])
   medicineId String
   medicine   Medicine @relation(fields: [medicineId], references: [id])
-
+  
   createdAt  DateTime @default(now())
 
   @@map("reviews")

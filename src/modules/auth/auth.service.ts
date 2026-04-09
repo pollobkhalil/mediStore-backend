@@ -1,16 +1,19 @@
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import jwt, { JwtPayload, Secret } from 'jsonwebtoken';
-
-
+import jwt from 'jsonwebtoken';
 import { prisma } from '../../lib/prisma';
 
-/**
- * Service to register a new user into the database
- * @param payload - User registration data
- * @returns The newly created user object (excluding password)
- */
-const registerUserIntoDB = async (payload: any) => {
-  // Hash the password before saving to DB
+
+const registerUser = async (payload: any) => {
+  // Prevent duplicate accounts
+  const isUserExist = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+
+  if (isUserExist) {
+    throw new Error('Email already registered. Please login.');
+  }
+
   const hashedPassword = await bcrypt.hash(payload.password, 12);
 
   const newUser = await prisma.user.create({
@@ -18,105 +21,51 @@ const registerUserIntoDB = async (payload: any) => {
       ...payload,
       password: hashedPassword,
     },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      status: true,
-      createdAt: true,
-    },
   });
 
-  return newUser;
+  // Remove password from response for security
+  const { password, ...userData } = newUser;
+  return userData;
 };
 
-/**
- * Service to authenticate user and generate JWT tokens
- * @param payload - User login credentials
- * @returns Access token and Refresh token
- */
 const loginUser = async (payload: any) => {
-  // 1. Check if user exists
-  const user = await prisma.user.findUniqueOrThrow({
-    where: {
-      email: payload.email,
-    },
+  // Check if user exists
+  const user = await prisma.user.findUnique({
+    where: { email: payload.email },
   });
 
-  // 2. Check if the user is blocked
-  if (user.status === 'BLOCKED') {
-    throw new Error('This user is blocked!');
+  if (!user) {
+    throw new Error('User not found!');
   }
 
-  // 3. Verify password
+  // Validate password
   const isPasswordMatched = await bcrypt.compare(payload.password, user.password);
 
   if (!isPasswordMatched) {
-    throw new Error('Invalid password. Please try again.');
+    throw new Error('Invalid password!');
   }
 
-  // 4. Create JWT Payload
+  // Generate session token
   const jwtPayload = {
     email: user.email,
     role: user.role,
   };
 
-  // 5. Generate Access Token (Short-lived)
-  const accessToken = jwt.sign(jwtPayload, 'YOUR_ACCESS_SECRET' as Secret, {
-    expiresIn: '1h',
-  });
+  const accessToken = jwt.sign(
+    jwtPayload,
+    process.env.JWT_ACCESS_SECRET as string,
+    { expiresIn: '1d' }
+  );
 
-  // 6. Generate Refresh Token (Long-lived)
-  const refreshToken = jwt.sign(jwtPayload, 'YOUR_REFRESH_SECRET' as Secret, {
-    expiresIn: '30d',
-  });
+  const { password: userPassword, ...userData } = user;
 
   return {
     accessToken,
-    refreshToken,
+    user: userData,
   };
 };
 
-/**
- * Service to generate a new access token using a refresh token
- * @param token - The refresh token from cookies
- * @returns A new access token
- */
-const refreshToken = async (token: string) => {
-  // 1. Verify the provided refresh token
-  const decoded = jwt.verify(token, 'YOUR_REFRESH_SECRET' as Secret) as JwtPayload;
-
-  const { email } = decoded;
-
-  // 2. Check if user still exists and is active
-  const user = await prisma.user.findUniqueOrThrow({
-    where: {
-      email,
-    },
-  });
-
-  if (user.status === 'BLOCKED') {
-    throw new Error('This user is blocked!');
-  }
-
-  // 3. Generate a new Access Token
-  const jwtPayload = {
-    email: user.email,
-    role: user.role,
-  };
-
-  const accessToken = jwt.sign(jwtPayload, 'YOUR_ACCESS_SECRET' as Secret, {
-    expiresIn: '1h',
-  });
-
-  return {
-    accessToken,
-  };
-};
-
-export const AuthService = {
-  registerUserIntoDB,
+export const authService = {
+  registerUser,
   loginUser,
-  refreshToken,
 };
