@@ -33,20 +33,23 @@ enum OrderStatus {
 // --- Models ---
 
 model User {
-  id        String     @id @default(uuid())
-  name      String
-  email     String     @unique
-  password  String
-  role      UserRole   @default(CUSTOMER)
-  status    UserStatus @default(ACTIVE)
-  isDeleted Boolean    @default(false)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  password     String
+  phoneNumber  String?    
+  address      String?    
+  profilePhoto String?    
+  role         UserRole   @default(CUSTOMER)
+  status       UserStatus @default(ACTIVE)
+  isDeleted    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   // Relations
-  medicines Medicine[] // Medicines added by the Seller
-  orders    Order[]    // Orders placed by the Customer
-  reviews   Review[]   // Reviews left by the Customer
+  medicines Medicine[] // Seller 
+  orders    Order[]    // Customer 
+  reviews   Review[]   // Customer 
 
   @@map("users")
 }

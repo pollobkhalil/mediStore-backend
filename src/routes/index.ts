@@ -12,6 +12,18 @@ const moduleRoutes = [
     path: '/auth',
     route: authRoutes,
   },
+  // {
+  //   path: '/users',
+  //   route: userRoutes,
+  // },
+  // {
+  //   path: '/admin', 
+  //   route: adminRoutes,
+  // },
+  // {
+  //   path: '/seller',
+  //   route: sellerRoutes,
+  // },
   {
     path: '/categories',
     route: categoryRoutes,
@@ -20,7 +32,7 @@ const moduleRoutes = [
     path: '/admin/categories',
     route: categoryRoutes,
   },
-   {
+  {
     path: '/medicines',
     route: medicineRoutes,
   },
