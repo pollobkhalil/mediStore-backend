@@ -2,17 +2,30 @@ import express from 'express';
 import { categoryController } from './category.controller';
 import auth from '../../middlewares/auth';
 
-
 const router = express.Router();
 
-// Only Admin can create categories
+//  Public Route
+router.get('/', categoryController.getAllCategories);
+
+// crete category only Admin 
 router.post(
   '/', 
   auth('ADMIN'), 
   categoryController.createCategory
 );
 
-// Public can view categories
-router.get('/', categoryController.getAllCategories);
+//  Edit/Update 
+router.patch(
+  '/:id', 
+  auth('ADMIN'), 
+  categoryController.updateCategory
+);
+
+// Delete R
+router.delete(
+  '/:id', 
+  auth('ADMIN'), 
+  categoryController.deleteCategory
+);
 
 export const categoryRoutes = router;

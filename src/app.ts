@@ -12,7 +12,7 @@ app.use(cookieParser());
 
 // --- Application Routes ---
 
-app.use('/api/v1', router);
+app.use('/api', router);
 
 // --- Basic Test Route ---
 app.get('/', (req: Request, res: Response) => {

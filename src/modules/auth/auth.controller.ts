@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { authService } from './auth.service';
+import catchAsync from '../../errors/catchAsync';
 
 const registerUser = async (req: Request, res: Response) => {
   try {
@@ -52,4 +53,20 @@ const loginUser = async (req: Request, res: Response) => {
   }
 };
 
-export const authController = { registerUser, loginUser };
+const logoutUser = catchAsync(async (req: Request, res: Response) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'User logged out successfully!',
+    data: null,
+  });
+});
+
+
+
+export const authController = { registerUser, loginUser,logoutUser };

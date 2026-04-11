@@ -16,6 +16,10 @@ const moduleRoutes = [
     path: '/categories',
     route: categoryRoutes,
   },
+  {
+    path: '/admin/categories',
+    route: categoryRoutes,
+  },
    {
     path: '/medicines',
     route: medicineRoutes,
