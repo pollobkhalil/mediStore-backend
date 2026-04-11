@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authRoutes } from '../modules/auth/auth.route';
 import { categoryRoutes } from '../modules/Category/category.route';
 import { medicineRoutes } from '../modules/Medicine/medicine.route';
+import { userRoutes } from '../modules/User/user.route';
 
 
 const router = Router();
@@ -12,18 +13,18 @@ const moduleRoutes = [
     path: '/auth',
     route: authRoutes,
   },
-  // {
-  //   path: '/users',
-  //   route: userRoutes,
-  // },
-  // {
-  //   path: '/admin', 
-  //   route: adminRoutes,
-  // },
-  // {
-  //   path: '/seller',
-  //   route: sellerRoutes,
-  // },
+  {
+    path: '/users',
+    route: userRoutes,
+  },
+  {
+    path: '/admin', 
+    route: userRoutes,
+  },
+  {
+    path: '/seller',
+    route: userRoutes,
+  },
   {
     path: '/categories',
     route: categoryRoutes,

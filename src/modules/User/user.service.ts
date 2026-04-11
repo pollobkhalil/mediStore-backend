@@ -1,8 +1,9 @@
+import { User } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 
-// নিজের প্রোফাইল দেখা
+// নিজের প্রোফাইল ডেটা নিয়ে আসা
 const getMyProfileFromDB = async (id: string) => {
-  const result = await prisma.user.findUnique({
+  return await prisma.user.findUniqueOrThrow({
     where: {
       id,
       isDeleted: false,
@@ -11,30 +12,33 @@ const getMyProfileFromDB = async (id: string) => {
       id: true,
       name: true,
       email: true,
+      phoneNumber: true,
+      address: true,
+      profilePhoto: true,
       role: true,
       status: true,
       createdAt: true,
-      updatedAt: true,
     },
   });
-  return result;
 };
 
 // নিজের প্রোফাইল আপডেট করা
-const updateMyProfileInDB = async (id: string, payload: any) => {
-  const result = await prisma.user.update({
+const updateMyProfileInDB = async (id: string, payload: Partial<User>) => {
+  return await prisma.user.update({
     where: {
       id,
+      isDeleted: false,
     },
     data: payload,
     select: {
       id: true,
       name: true,
       email: true,
-      role: true,
+      phoneNumber: true,
+      address: true,
+      profilePhoto: true,
     },
   });
-  return result;
 };
 
 export const userService = {

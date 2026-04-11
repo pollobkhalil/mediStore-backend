@@ -1,36 +1,39 @@
 import { Request, Response } from 'express';
-import catchAsync from '../../errors/catchAsync';
-import { userService } from './user.service';
 
+
+import { userService } from './user.service';
+import catchAsync from '../../errors/catchAsync';
+import sendResponse from '../../utils/sendResponse';
 
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.user; 
+  const { id } = req.user; // auth middleware থেকে পাওয়া ইউজার আইডি
 
   const result = await userService.getMyProfileFromDB(id);
 
-  res.status(200).json({
+  sendResponse(res, {
+    statusCode: 200,
     success: true,
-    message: 'Profile retrieved successfully!',
+    message: 'Profile retrieved successfully',
     data: result,
   });
 });
 
-// Profiel update
 const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.user;
-  const updateData = req.body;
+  const { name, phoneNumber, address, profilePhoto } = req.body;
 
-  // Security check
-  const dataToUpdate = {
-    name: updateData.name,
-    
-  };
+  
+  const result = await userService.updateMyProfileInDB(id, {
+    name,
+    phoneNumber,
+    address,
+    profilePhoto,
+  });
 
-  const result = await userService.updateMyProfileInDB(id, dataToUpdate);
-
-  res.status(200).json({
+  sendResponse(res, {
+    statusCode: 200,
     success: true,
-    message: 'Profile updated successfully!',
+    message: 'Profile updated successfully',
     data: result,
   });
 });
