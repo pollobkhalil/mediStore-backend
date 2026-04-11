@@ -1,11 +1,20 @@
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { prisma } from '../../lib/prisma';
 
+// type safe token 
+const createToken = (
+  jwtPayload: { id: string; email: string; role: string },
+  secret: Secret,
+  expiresIn: string
+) => {
+  const options: SignOptions = {
+    expiresIn: expiresIn as SignOptions['expiresIn'],
+  };
+  return jwt.sign(jwtPayload, secret, options);
+};
 
 const registerUser = async (payload: any) => {
-  // Prevent duplicate accounts
   const isUserExist = await prisma.user.findUnique({
     where: { email: payload.email },
   });
@@ -23,50 +32,56 @@ const registerUser = async (payload: any) => {
     },
   });
 
-  // Remove password from response for security
+  const jwtPayload = { id: newUser.id, email: newUser.email, role: newUser.role };
+
+  const accessToken = createToken(
+    jwtPayload,
+    process.env.JWT_ACCESS_SECRET as Secret,
+    '1d'
+  );
+
+  const refreshToken = createToken(
+    jwtPayload,
+    process.env.JWT_REFRESH_SECRET as Secret,
+    '365d'
+  );
+
   const { password, ...userData } = newUser;
-  return userData;
+
+  return { accessToken, refreshToken, user: userData };
 };
 
 const loginUser = async (payload: any) => {
-  // Check if user exists
   const user = await prisma.user.findUnique({
     where: { email: payload.email },
   });
 
-  if (!user) {
+  if (!user || user.isDeleted) {
     throw new Error('User not found!');
   }
 
-  // Validate password
   const isPasswordMatched = await bcrypt.compare(payload.password, user.password);
-
   if (!isPasswordMatched) {
     throw new Error('Invalid password!');
   }
 
-  // Generate session token
-  const jwtPayload = {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-  };
+  const jwtPayload = { id: user.id, email: user.email, role: user.role };
 
-  const accessToken = jwt.sign(
+  const accessToken = createToken(
     jwtPayload,
-    process.env.JWT_ACCESS_SECRET as string,
-    { expiresIn: '1d' }
+    process.env.JWT_ACCESS_SECRET as Secret,
+    '1d'
+  );
+
+  const refreshToken = createToken(
+    jwtPayload,
+    process.env.JWT_REFRESH_SECRET as Secret,
+    '365d'
   );
 
   const { password: userPassword, ...userData } = user;
 
-  return {
-    accessToken,
-    user: userData,
-  };
+  return { accessToken, refreshToken, user: userData };
 };
 
-export const authService = {
-  registerUser,
-  loginUser,
-};
+export const authService = { registerUser, loginUser };
