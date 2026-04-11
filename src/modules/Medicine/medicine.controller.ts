@@ -20,10 +20,7 @@ const createMedicine = catchAsync(async (req: Request, res: Response) => {
 
 // Get all medicines with Search, Filter & Pagination
 const getAllMedicines = catchAsync(async (req: Request, res: Response) => {
-  /**
-   * এখানে req.query কে TMedicineQuery হিসেবে কাস্ট করা হয়েছে।
-   * এতে সার্ভিস বুঝতে পারবে ঠিক কোন কোন ডাটা আসছে।
-   */
+  
   const result = await medicineService.getAllMedicinesFromDB(
     req.query as TMedicineQuery 
   );
@@ -50,7 +47,39 @@ const getSingleMedicine = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
+// Update medicine details
+const updateMedicine = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await medicineService.updateMedicineInDB(id as string, req.body);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Medicine updated successfully!',
+    data: result,
+  });
+});
+
+
+
+const deleteMedicine = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const sellerId = req.user.id;
+
+  await medicineService.deleteMedicineFromDB(id as string, sellerId);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Medicine deleted successfully!',
+    data: null,
+  });
+});
+
+
+
 export const medicineController = {
+  deleteMedicine,
+  updateMedicine,
   createMedicine,
   getAllMedicines,
   getSingleMedicine,

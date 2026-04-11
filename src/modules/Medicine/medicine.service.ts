@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
-import { TMedicine } from './medicine.interface';
+import { TMedicine, TMedicineQuery } from './medicine.interface';
 
 /**
  * Create a new medicine entry
@@ -16,7 +16,7 @@ const createMedicine = async (payload: TMedicine) => {
 /**
  * Fetch medicines with search, filter, and pagination
  */
-const getAllMedicinesFromDB = async (query: any) => {
+const getAllMedicinesFromDB = async (query: TMedicineQuery, sellerId?: string) => {
   // Explicitly cast query parameters to handle TS errors
   const searchTerm = query.searchTerm as string;
   const category = query.category as string;
@@ -45,6 +45,11 @@ const getAllMedicinesFromDB = async (query: any) => {
     andConditions.push({
       category: { name: { equals: category, mode: 'insensitive' } },
     });
+  }
+
+
+  if (sellerId) {
+    andConditions.push({ sellerId });
   }
 
   // Range filter for price
@@ -100,7 +105,62 @@ const getSingleMedicineFromDB = async (id: string) => {
   return result;
 };
 
+
+/**
+ * Update medicine details
+ */
+const updateMedicineInDB = async (id: string, payload: Partial<TMedicine>) => {
+  // Check if medicine exists and is not deleted
+  const isExist = await prisma.medicine.findUnique({
+    where: { id, isDeleted: false },
+  });
+
+  if (!isExist) {
+    throw new Error('Medicine not found or already deleted!');
+  }
+
+  const result = await prisma.medicine.update({
+    where: { id },
+    data: payload,
+    include: {
+      category: { select: { name: true } },
+    },
+  });
+
+  return result;
+};
+
+
+
+/**
+ * Soft delete a medicine
+ */
+const deleteMedicineFromDB = async (id: string, sellerId: string) => {
+  const isExist = await prisma.medicine.findUnique({
+    where: { id, isDeleted: false },
+  });
+
+  if (!isExist) {
+    throw new Error('Medicine not found!');
+  }
+
+  // Ensure only the owner can delete
+  if (isExist.sellerId !== sellerId) {
+    throw new Error('You are not authorized to delete this medicine!');
+  }
+
+  const result = await prisma.medicine.update({
+    where: { id },
+    data: { isDeleted: true }, // Not removing, just hiding
+  });
+
+  return result;
+};
+
+
 export const medicineService = {
+  deleteMedicineFromDB,
+  updateMedicineInDB,
   createMedicine,
   getAllMedicinesFromDB,
   getSingleMedicineFromDB,

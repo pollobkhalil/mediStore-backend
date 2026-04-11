@@ -9,5 +9,6 @@ router.post('/', auth('SELLER', 'ADMIN'), medicineController.createMedicine);
 
 // Everyone can view medicines
 router.get('/', medicineController.getAllMedicines);
+router.patch('/:id', auth('SELLER', 'ADMIN'), medicineController.updateMedicine);
 
 export const medicineRoutes = router;
