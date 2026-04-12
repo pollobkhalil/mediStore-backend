@@ -28,7 +28,7 @@ const getSellerOrdersFromDB = async (sellerId: string) => {
     },
     include: {
       orderItems: true,
-      user: { select: { name: true, email: true } }
+      customer: { select: { name: true, email: true } }
     }
   });
 };

@@ -1,12 +1,36 @@
 import { prisma } from '../../lib/prisma';
 
-const getAdminDashboardStats = async () => {
-    const totalUsers = await prisma.user.count();
-    const totalMedicines = await prisma.medicine.count({ where: { isDeleted: false } });
-    const totalOrders = await prisma.order.count();
-    // Add revenue calculation logic here
+const getAdminDashboardStatsFromDB = async () => {
+  // Total Revenue
+  const totalRevenue = await prisma.order.aggregate({
+    _sum: {
+      totalAmount: true,
+    },
+  });
 
-    return { totalUsers, totalMedicines, totalOrders, totalRevenue: 0 };
+  // Total Orders
+  const totalOrders = await prisma.order.count();
+
+  // Total Customer
+  const totalCustomers = await prisma.user.count({
+    where: { role: 'CUSTOMER' },
+  });
+
+  // Total Seller 
+  const totalSellers = await prisma.user.count({
+    where: { role: 'SELLER' },
+  });
+
+  // Total Medicine
+  const totalMedicines = await prisma.medicine.count();
+
+  return {
+    revenue: totalRevenue._sum.totalAmount || 0,
+    totalOrders,
+    totalCustomers,
+    totalSellers,
+    totalMedicines,
+  };
 };
 
 
@@ -56,7 +80,7 @@ const getAllOrdersFromDB = async () => {
 
 export const adminService =
 {
-    getAdminDashboardStats,
+    getAdminDashboardStatsFromDB,
     getAllUsersFromDB,
     updateUserStatusInDB,
     getAllOrdersFromDB

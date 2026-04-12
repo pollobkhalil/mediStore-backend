@@ -7,7 +7,11 @@ import { UserRole } from '@prisma/client';
 const router = express.Router();
 
 //  Dashboard Stats
-router.get('/', auth(UserRole.ADMIN), adminController.getDashboardStats);
+router.get(
+  '/',
+  auth(UserRole.ADMIN),
+  adminController.getDashboardStats
+);
 
 //  Manage Users
 router.get('/users', auth(UserRole.ADMIN), adminController.getAllUsers);

@@ -5,13 +5,14 @@ import { adminService } from './admin.service';
 import catchAsync from '../../errors/catchAsync';
 
 const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
-    const result = await adminService.getAdminDashboardStats();
-    sendResponse(res, {
-        statusCode: 200,
-        success: true,
-        message: 'Admin dashboard stats retrieved successfully',
-        data: result,
-    });
+  const result = await adminService.getAdminDashboardStatsFromDB();
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Admin dashboard statistics retrieved successfully',
+    data: result,
+  });
 });
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
