@@ -30,6 +30,7 @@ enum OrderStatus {
   CANCELLED
 }
 
+
 // --- Models ---
 
 model User {
@@ -97,6 +98,7 @@ model Order {
   status          OrderStatus @default(PENDING)
   shippingAddress String
   contactNumber   String
+  
   
   // Relations
   customerId      String
