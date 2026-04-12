@@ -3,7 +3,8 @@ import httpStatus from 'http-status';
 import catchAsync from '../../errors/catchAsync';
 import { medicineService } from './medicine.service';
 import { TMedicineQuery } from './medicine.interface';
-// Service থেকে টাইপটি ইমপোর্ট করে নিন (যদি আলাদা ফাইলে থাকে)
+import sendResponse from '../../utils/sendResponse';
+
 
 
 // Add a new medicine
@@ -76,8 +77,23 @@ const deleteMedicine = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const getMyMedicines = catchAsync(async (req: Request, res: Response) => {
+  const { id: sellerId } = req.user; 
+
+  const result = await medicineService.getMyMedicinesFromDB(sellerId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Seller inventory retrieved successfully',
+    data: result,
+  });
+});
+
+
 
 export const medicineController = {
+  getMyMedicines,
   deleteMedicine,
   updateMedicine,
   createMedicine,

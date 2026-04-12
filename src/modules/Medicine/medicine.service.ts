@@ -158,7 +158,25 @@ const deleteMedicineFromDB = async (id: string, sellerId: string) => {
 };
 
 
+// src/app/modules/Medicine/medicine.service.ts
+
+const getMyMedicinesFromDB = async (sellerId: string) => {
+  return await prisma.medicine.findMany({
+    where: {
+      sellerId,
+      isDeleted: false,
+    },
+    include: {
+      category: true,
+    },
+  });
+};
+
+
+
+
 export const medicineService = {
+  getMyMedicinesFromDB,
   deleteMedicineFromDB,
   updateMedicineInDB,
   createMedicine,

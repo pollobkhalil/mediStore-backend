@@ -5,7 +5,7 @@ import auth from '../../middlewares/auth';
 const router = express.Router();
 
 // Only Sellers and Admins can add medicines
-router.post('/', auth('SELLER', 'ADMIN'), medicineController.createMedicine);
+router.post('/', auth('SELLER'), medicineController.createMedicine);
 
 // Everyone can view medicines
 router.get('/', medicineController.getAllMedicines);

@@ -5,16 +5,16 @@ import { UserRole } from '@prisma/client';
 
 const router = express.Router();
 
-// GET /api/v1/users/me
+// GET /api/users/me
 router.get(
   '/me',
   auth(UserRole.ADMIN, UserRole.SELLER, UserRole.CUSTOMER),
   userController.getMyProfile
 );
 
-// PATCH /api/v1/users/update-me
+// PATCH /api/users/update-me
 router.patch(
-  '/update-me',
+  '/me',
   auth(UserRole.ADMIN, UserRole.SELLER, UserRole.CUSTOMER),
   userController.updateMyProfile
 );

@@ -6,7 +6,7 @@ import catchAsync from '../../errors/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.user; // auth middleware থেকে পাওয়া ইউজার আইডি
+  const { id } = req.user; // auth middleware 
 
   const result = await userService.getMyProfileFromDB(id);
 
