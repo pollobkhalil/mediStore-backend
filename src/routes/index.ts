@@ -3,6 +3,8 @@ import { authRoutes } from '../modules/auth/auth.route';
 import { categoryRoutes } from '../modules/Category/category.route';
 import { medicineRoutes } from '../modules/Medicine/medicine.route';
 import { userRoutes } from '../modules/User/user.route';
+import { sellerRoutes } from '../modules/Seller/seller.route';
+import { adminRoutes } from '../modules/Admin/admin.route';
 
 
 const router = Router();
@@ -18,12 +20,20 @@ const moduleRoutes = [
     route: userRoutes,
   },
   {
-    path: '/admin', 
+    path: '/admin',
     route: userRoutes,
   },
   {
     path: '/seller',
     route: userRoutes,
+  },
+  {
+    path: '/seller',
+    route: sellerRoutes,
+  },
+  {
+    path: '/admin',
+    route: adminRoutes,
   },
   {
     path: '/categories',
