@@ -2,6 +2,7 @@ import { Server } from 'http';
 import app from './app';
 import config from './config';
 import { prisma } from './lib/prisma';
+import seedAdmin from './seed/SeedAdmin';
 
 
 
@@ -13,6 +14,9 @@ async function main() {
     
     await prisma.$connect();
     console.log('✅ Database connected successfully');
+
+
+    await seedAdmin();
 
     server = app.listen(config.port, () => {
       console.log(`🚀 Server is running on port ${config.port}`);
