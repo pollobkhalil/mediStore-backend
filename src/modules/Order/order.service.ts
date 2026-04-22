@@ -1,40 +1,34 @@
 import { prisma } from '../../lib/prisma';
 import { OrderStatus } from '@prisma/client';
+import httpStatus from 'http-status';
+import AppError from '../../errors/AppError'; // আপনার AppError ইমপোর্ট করুন
 
+/**
+ * Create a new order with stock validation and automatic cart clearing
+ */
 const createOrderInDB = async (userId: string, payload: any) => {
   const { items, shippingAddress, contactNumber, totalAmount } = payload;
 
-  // Transaction 
   return await prisma.$transaction(async (tx) => {
-   
-    const order = await tx.order.create({
-      data: {
-        customerId: userId,
-        totalAmount,
-        shippingAddress,
-        contactNumber,
-        status: OrderStatus.PENDING,
-        // ২. রিলেটেড অর্ডার আইটেমগুলো ক্রিয়েট করা
-        orderItems: {
-          create: items.map((item: any) => ({
-            medicineId: item.medicineId,
-            quantity: item.quantity,
-            price: item.price, // capture current price
-          })),
-        },
-      },
-    });
-
-    // Stock check
+    
+    // 1. Validate Stock and Update Medicine Inventory
     for (const item of items) {
       const medicine = await tx.medicine.findUnique({
         where: { id: item.medicineId },
       });
 
-      if (!medicine || medicine.stockQuantity < item.quantity) {
-        throw new Error(`Insufficient stock for ${medicine?.name || 'medicine'}`);
+      if (!medicine) {
+        throw new AppError(httpStatus.NOT_FOUND, `Medicine not found with ID: ${item.medicineId}`);
       }
 
+      if (medicine.stockQuantity < item.quantity) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST, 
+          `Insufficient stock for ${medicine.name}. Available: ${medicine.stockQuantity}`
+        );
+      }
+
+      // Decrement stock
       await tx.medicine.update({
         where: { id: item.medicineId },
         data: {
@@ -43,26 +37,66 @@ const createOrderInDB = async (userId: string, payload: any) => {
       });
     }
 
+    // 2. Create Order and OrderItems
+    const order = await tx.order.create({
+      data: {
+        customerId: userId,
+        totalAmount,
+        shippingAddress,
+        contactNumber,
+        status: OrderStatus.PENDING,
+        orderItems: {
+          create: items.map((item: any) => ({
+            medicineId: item.medicineId,
+            quantity: item.quantity,
+            price: item.price, 
+          })),
+        },
+      },
+      include: {
+        orderItems: true,
+      },
+    });
+
+    // 3. Clear User's Cart
+    const cart = await tx.cart.findUnique({
+      where: { customerId: userId },
+    });
+
+    if (cart) {
+      await tx.cartItem.deleteMany({
+        where: { cartId: cart.id },
+      });
+    }
+
     return order;
   });
 };
 
-// Customer order view
+/**
+ * Fetch all orders for a specific customer
+ */
 const getMyOrdersFromDB = async (userId: string) => {
   return await prisma.order.findMany({
     where: { customerId: userId },
     include: {
       orderItems: {
-        include: { medicine: true },
+        include: { 
+          medicine: {
+            select: { name: true, image: true, brand: true, price: true }
+          } 
+        },
       },
     },
     orderBy: { createdAt: 'desc' },
   });
 };
 
-
+/**
+ * Fetch a single order detail for the owner
+ */
 const getSingleOrderFromDB = async (orderId: string, userId: string) => {
-  return await prisma.order.findUnique({
+  const result = await prisma.order.findUnique({
     where: {
       id: orderId,
       customerId: userId, 
@@ -77,10 +111,68 @@ const getSingleOrderFromDB = async (orderId: string, userId: string) => {
       }
     }
   });
+
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Order not found or access denied');
+  }
+
+  return result;
+};
+
+
+// Fetch all orders (Admin/Seller Access)
+const getAllOrdersFromDB = async () => {
+  return await prisma.order.findMany({
+    include: {
+     
+      customer: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    
+      orderItems: {
+        include: {
+          medicine: {
+            select: { name: true, brand: true }
+          }
+        }
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+};
+
+// Update Order Status (Admin/Seller Access)
+const updateOrderStatusInDB = async (orderId: string, status: OrderStatus) => {
+ 
+  const isExist = await prisma.order.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!isExist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Order not found!');
+  }
+
+  
+  const result = await prisma.order.update({
+    where: { id: orderId },
+    data: { status },
+    include: {
+      orderItems: true,
+    },
+  });
+
+  return result;
 };
 
 export const orderService = {
   createOrderInDB,
   getMyOrdersFromDB,
-  getSingleOrderFromDB
+  getSingleOrderFromDB, 
+  updateOrderStatusInDB,
+  getAllOrdersFromDB
 };

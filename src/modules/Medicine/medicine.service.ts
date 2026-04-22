@@ -17,7 +17,6 @@ const createMedicine = async (payload: TMedicine) => {
  * Fetch medicines with search, filter, and pagination
  */
 const getAllMedicinesFromDB = async (query: TMedicineQuery, sellerId?: string) => {
-  // Explicitly cast query parameters to handle TS errors
   const searchTerm = query.searchTerm as string;
   const category = query.category as string;
   const minPrice = query.minPrice as string;
@@ -27,10 +26,8 @@ const getAllMedicinesFromDB = async (query: TMedicineQuery, sellerId?: string) =
   const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Initial filter for non-deleted records
   const andConditions: Prisma.MedicineWhereInput[] = [{ isDeleted: false }];
 
-  // Partial match search for name or brand
   if (searchTerm) {
     andConditions.push({
       OR: [
@@ -40,19 +37,16 @@ const getAllMedicinesFromDB = async (query: TMedicineQuery, sellerId?: string) =
     });
   }
 
-  // Exact match filter for category name
   if (category) {
     andConditions.push({
       category: { name: { equals: category, mode: 'insensitive' } },
     });
   }
 
-
   if (sellerId) {
     andConditions.push({ sellerId });
   }
 
-  // Range filter for price
   if (minPrice || maxPrice) {
     andConditions.push({
       price: {
@@ -105,20 +99,29 @@ const getSingleMedicineFromDB = async (id: string) => {
   return result;
 };
 
-
 /**
  * Update medicine details
+ * Added sellerId to ensure only the owner can update
  */
-const updateMedicineInDB = async (id: string, payload: Partial<TMedicine>) => {
-  // Check if medicine exists and is not deleted
+const updateMedicineInDB = async (
+  id: string, 
+  sellerId: string, 
+  payload: Partial<TMedicine>
+) => {
+  // 1. Check if the medicine exists and belongs to the seller
   const isExist = await prisma.medicine.findUnique({
     where: { id, isDeleted: false },
   });
 
   if (!isExist) {
-    throw new Error('Medicine not found or already deleted!');
+    throw new Error('Medicine not found!');
   }
 
+  if (isExist.sellerId !== sellerId) {
+    throw new Error('You are not authorized to update this medicine!');
+  }
+
+  // 2. Perform the update
   const result = await prisma.medicine.update({
     where: { id },
     data: payload,
@@ -130,10 +133,9 @@ const updateMedicineInDB = async (id: string, payload: Partial<TMedicine>) => {
   return result;
 };
 
-
-
 /**
  * Soft delete a medicine
+ * Ensures ownership before marking as deleted
  */
 const deleteMedicineFromDB = async (id: string, sellerId: string) => {
   const isExist = await prisma.medicine.findUnique({
@@ -151,15 +153,15 @@ const deleteMedicineFromDB = async (id: string, sellerId: string) => {
 
   const result = await prisma.medicine.update({
     where: { id },
-    data: { isDeleted: true }, // Not removing, just hiding
+    data: { isDeleted: true }, // Logic for soft delete
   });
 
   return result;
 };
 
-
-// src/app/modules/Medicine/medicine.service.ts
-
+/**
+ * Get medicines belonging to a specific seller
+ */
 const getMyMedicinesFromDB = async (sellerId: string) => {
   return await prisma.medicine.findMany({
     where: {
@@ -171,9 +173,6 @@ const getMyMedicinesFromDB = async (sellerId: string) => {
     },
   });
 };
-
-
-
 
 export const medicineService = {
   getMyMedicinesFromDB,

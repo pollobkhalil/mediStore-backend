@@ -46,7 +46,7 @@ model User {
   isDeleted    Boolean    @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
-
+  cart         Cart?
   // Relations
   medicines Medicine[] // Seller 
   orders    Order[]    // Customer 
@@ -85,7 +85,7 @@ model Medicine {
   
   orderItems      OrderItem[]
   reviews         Review[]
-
+  cartItems       CartItem[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -137,4 +137,32 @@ model Review {
   createdAt  DateTime @default(now())
 
   @@map("reviews")
+}
+
+
+
+model Cart {
+  id          String     @id @default(uuid())
+  customerId  String     @unique
+  customer    User       @relation(fields: [customerId], references: [id])
+  cartItems   CartItem[]
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id          String   @id @default(uuid())
+  cartId      String
+  cart        Cart     @relation(fields: [cartId], references: [id])
+  medicineId  String
+  medicine    Medicine @relation(fields: [medicineId], references: [id])
+  quantity    Int      @default(1)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("cart_items")
 }

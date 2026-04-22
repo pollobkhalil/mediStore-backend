@@ -5,24 +5,44 @@ import { UserRole } from '@prisma/client';
 
 const router = express.Router();
 
-//  Create order
+// --- Customer Routes ---
+
+// Create order (Only Customers)
 router.post(
   '/',
   auth(UserRole.CUSTOMER),
   orderController.createOrder
 );
 
-//  View personal orders
+// View personal orders (Customer viewing their own history)
 router.get(
-  '/',
+  '/my-orders',
   auth(UserRole.CUSTOMER),
   orderController.getMyOrders
 );
 
+// --- Admin/Seller Routes ---
 
+// View ALL orders (For Admin/Seller to see everyone's orders)
+router.get(
+  '/',
+  auth(UserRole.ADMIN, UserRole.SELLER),
+  orderController.getAllOrders 
+);
+
+// Update order status (For Admin/Seller to mark as SHIPPED/DELIVERED)
+router.patch(
+  '/:id/status',
+  auth(UserRole.ADMIN, UserRole.SELLER),
+  orderController.updateOrderStatus 
+);
+
+// --- Shared Routes ---
+
+// Get single order details
 router.get(
   '/:id',
-  auth(UserRole.CUSTOMER),
+  auth(UserRole.CUSTOMER, UserRole.ADMIN, UserRole.SELLER),
   orderController.getSingleOrder
 );
 

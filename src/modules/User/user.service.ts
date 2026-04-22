@@ -33,7 +33,30 @@ const getSellerOrdersFromDB = async (sellerId: string) => {
   });
 };
 
-export const sellerService = {
+const updateMyProfile = async (userId: string, payload: any) => {
+  
+  const result = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: payload,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      contactNumber: true,
+      shippingAddress: true,
+      profileImage: true,
+      role: true,
+    },
+  });
+
+  return result;
+};
+
+
+export const userService = {
+  updateMyProfile,
   getSellerDashboardStats,
   getSellerOrdersFromDB
 };

@@ -20,3 +20,5 @@ export type TMedicineQuery = {
   page?: string;
   limit?: string;
 };
+
+
