@@ -23,7 +23,7 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
   const { name, phoneNumber, address, profilePhoto } = req.body;
 
   
-  const result = await userService.updateMyProfileInDB(id, {
+  const result = await userService.updateMyProfile(id, {
     name,
     phoneNumber,
     address,

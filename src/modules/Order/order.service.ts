@@ -1,17 +1,19 @@
 import { prisma } from '../../lib/prisma';
 import { OrderStatus } from '@prisma/client';
 import httpStatus from 'http-status';
-import AppError from '../../errors/AppError'; // আপনার AppError ইমপোর্ট করুন
+import AppError from '../../errors/AppError';
+import { CartService } from '../Cart/cart.service'; // CartService ইমপোর্ট করুন
 
 /**
  * Create a new order with stock validation and automatic cart clearing
  */
 const createOrderInDB = async (userId: string, payload: any) => {
-  const { items, shippingAddress, contactNumber, totalAmount } = payload;
+  const { items, shippingAddress, contactNumber } = payload;
 
   return await prisma.$transaction(async (tx) => {
-    
-    // 1. Validate Stock and Update Medicine Inventory
+    let calculatedTotalAmount = 0;
+
+    // 1. Validate Stock and Calculate Total Amount
     for (const item of items) {
       const medicine = await tx.medicine.findUnique({
         where: { id: item.medicineId },
@@ -28,6 +30,9 @@ const createOrderInDB = async (userId: string, payload: any) => {
         );
       }
 
+      // Calculate total amount based on DB price for security
+      calculatedTotalAmount += medicine.price * item.quantity;
+
       // Decrement stock
       await tx.medicine.update({
         where: { id: item.medicineId },
@@ -35,13 +40,16 @@ const createOrderInDB = async (userId: string, payload: any) => {
           stockQuantity: { decrement: item.quantity },
         },
       });
+
+      // Temporarily store the price for OrderItem creation
+      item.price = medicine.price;
     }
 
-    // 2. Create Order and OrderItems
+    //  Create Order and OrderItems
     const order = await tx.order.create({
       data: {
         customerId: userId,
-        totalAmount,
+        totalAmount: calculatedTotalAmount,
         shippingAddress,
         contactNumber,
         status: OrderStatus.PENDING,
@@ -58,16 +66,9 @@ const createOrderInDB = async (userId: string, payload: any) => {
       },
     });
 
-    // 3. Clear User's Cart
-    const cart = await tx.cart.findUnique({
-      where: { customerId: userId },
-    });
-
-    if (cart) {
-      await tx.cartItem.deleteMany({
-        where: { cartId: cart.id },
-      });
-    }
+    //  Clear User's Cart using CartService
+   
+    await CartService.clearCartFromDB(userId, tx);
 
     return order;
   });
@@ -124,14 +125,12 @@ const getSingleOrderFromDB = async (orderId: string, userId: string) => {
 const getAllOrdersFromDB = async () => {
   return await prisma.order.findMany({
     include: {
-     
       customer: {
         select: {
           name: true,
           email: true,
         },
       },
-    
       orderItems: {
         include: {
           medicine: {
@@ -148,7 +147,6 @@ const getAllOrdersFromDB = async () => {
 
 // Update Order Status (Admin/Seller Access)
 const updateOrderStatusInDB = async (orderId: string, status: OrderStatus) => {
- 
   const isExist = await prisma.order.findUnique({
     where: { id: orderId },
   });
@@ -157,7 +155,6 @@ const updateOrderStatusInDB = async (orderId: string, status: OrderStatus) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Order not found!');
   }
 
-  
   const result = await prisma.order.update({
     where: { id: orderId },
     data: { status },

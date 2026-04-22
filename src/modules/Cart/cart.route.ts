@@ -5,9 +5,18 @@ import { CartController } from './cart.controller';
 
 const router = express.Router();
 
-// only customer
-router.post('/', auth(UserRole.CUSTOMER), CartController.addToCart);
-router.get('/', auth(UserRole.CUSTOMER), CartController.getMyCart);
-router.delete('/:id', auth(UserRole.CUSTOMER), CartController.removeItemFromCart);
+// Apply auth middleware to all routes in this router
+
+router.use(auth(UserRole.CUSTOMER));
+
+// Add item to cart
+router.post('/', CartController.addToCart);
+
+// Get logged-in user's cart
+router.get('/', CartController.getMyCart);
+
+// Remove specific item from cart
+
+router.delete('/:id', CartController.removeItemFromCart);
 
 export const CartRoutes = router;

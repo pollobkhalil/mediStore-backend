@@ -2,13 +2,20 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { TMedicine, TMedicineQuery } from './medicine.interface';
 
-/**
- * Create a new medicine entry
- */
-const createMedicine = async (payload: TMedicine) => {
+
+
+const createMedicine = async (sellerId: string, payload: TMedicine) => {
+  
+  const { id, ...medicineData } = payload as any;
+
   const result = await prisma.medicine.create({
-    data: payload,
-    include: { category: true },
+    data: {
+      ...medicineData,
+      sellerId: sellerId, 
+    },
+    include: {
+      category: true, 
+    },
   });
   return result;
 };

@@ -11,7 +11,7 @@ const createMedicine = catchAsync(async (req: Request, res: Response) => {
   const user = (req as any).user;
   const sellerId = user.id;
 
-  const result = await medicineService.createMedicine({ ...req.body, sellerId });
+  const result = await medicineService.createMedicine(sellerId, req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,

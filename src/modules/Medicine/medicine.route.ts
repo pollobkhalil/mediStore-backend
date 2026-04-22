@@ -11,5 +11,6 @@ router.post('/', auth('SELLER'), medicineController.createMedicine);
 router.get('/', medicineController.getAllMedicines);
 router.get('/:id', medicineController.getSingleMedicine);
 router.patch('/:id', auth('SELLER', 'ADMIN'), medicineController.updateMedicine);
+router.delete('/:id', auth('SELLER'), medicineController.deleteMedicine);
 
 export const medicineRoutes = router;

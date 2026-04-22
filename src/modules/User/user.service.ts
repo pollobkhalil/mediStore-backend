@@ -1,62 +1,40 @@
 import { prisma } from '../../lib/prisma';
 
-const getSellerDashboardStats = async (sellerId: string) => {
-  // Count total medicines for this seller
-  const totalMedicines = await prisma.medicine.count({
-    where: { sellerId, isDeleted: false },
-  });
-
-  // Count total orders involving this seller's products
-  const totalOrders = await prisma.order.count({
-      where: { 
-          orderItems: { some: { medicine: { sellerId } } } 
-      }
-  });
-
-  return {
-    totalMedicines,
-    totalOrders,
-    totalRevenue: 0, // Logic to be added based on schema
-  };
-};
-
-const getSellerOrdersFromDB = async (sellerId: string) => {
-  // Fetch all orders for this seller's inventory
-  return await prisma.order.findMany({
-    where: {
-      orderItems: { some: { medicine: { sellerId } } }
-    },
-    include: {
-      orderItems: true,
-      user: { select: { name: true, email: true } }
-    }
-  });
-};
-
+// Keep profile logic here as it applies to all users (Admin, Seller, Customer)
 const updateMyProfile = async (userId: string, payload: any) => {
-  
   const result = await prisma.user.update({
-    where: {
-      id: userId,
-    },
+    where: { id: userId },
     data: payload,
     select: {
       id: true,
       name: true,
       email: true,
-      contactNumber: true,
-      shippingAddress: true,
-      profileImage: true,
-      role: true,
+      phoneNumber: true,
+      address: true,
+      profilePhoto: true,
+      status: true,
     },
   });
-
   return result;
 };
 
 
+const getMyProfileFromDB = async (userId: string) => {
+  return await prisma.user.findUnique({
+    where: { id: userId, isDeleted: false },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phoneNumber: true,
+      address: true,
+      profilePhoto: true,
+      status: true,
+    },
+  });
+};
+
 export const userService = {
   updateMyProfile,
-  getSellerDashboardStats,
-  getSellerOrdersFromDB
-};
+  getMyProfileFromDB, 
+}

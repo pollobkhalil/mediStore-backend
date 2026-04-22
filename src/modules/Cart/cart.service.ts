@@ -2,26 +2,36 @@ import { prisma } from '../../lib/prisma';
 import { TCartItemRequest } from './cart.interface';
 
 /**
- * Add an item to the cart. 
- * If the cart doesn't exist, it creates one.
- * If the item already exists in the cart, it updates the quantity.
+ * Add an item to the cart with stock validation.
  */
 const addToCart = async (userId: string, payload: TCartItemRequest) => {
   const { medicineId, quantity } = payload;
 
-  //  Check if the user already has a cart
+  // 1. Check if the medicine exists and has enough stock
+  const medicine = await prisma.medicine.findUnique({
+    where: { id: medicineId },
+  });
+
+  if (!medicine) {
+    throw new Error('Medicine not found!');
+  }
+
+  if (medicine.stockQuantity < quantity) {
+    throw new Error(`Insufficient stock. Only ${medicine.stockQuantity} items available.`);
+  }
+
+  // 2. Ensure user has a cart
   let cart = await prisma.cart.findUnique({
     where: { customerId: userId },
   });
 
-  // If no cart exists, create a new one for the user
   if (!cart) {
     cart = await prisma.cart.create({
       data: { customerId: userId },
     });
   }
 
-  //  Check if this specific medicine is already in the cart
+  // 3. Check if the item already exists in the cart
   const existingCartItem = await prisma.cartItem.findFirst({
     where: {
       cartId: cart.id,
@@ -30,14 +40,19 @@ const addToCart = async (userId: string, payload: TCartItemRequest) => {
   });
 
   if (existingCartItem) {
-    // If item exists, update the quantity by adding the new amount
+    // Check if new total quantity exceeds stock
+    const newQuantity = existingCartItem.quantity + quantity;
+    if (medicine.stockQuantity < newQuantity) {
+      throw new Error('Total quantity in cart exceeds available stock!');
+    }
+
     return await prisma.cartItem.update({
       where: { id: existingCartItem.id },
-      data: { quantity: existingCartItem.quantity + quantity },
+      data: { quantity: newQuantity },
     });
   }
 
-  // 5. If item doesn't exist, create a new cart item
+  // 4. Create a new cart item
   return await prisma.cartItem.create({
     data: {
       cartId: cart.id,
@@ -48,15 +63,24 @@ const addToCart = async (userId: string, payload: TCartItemRequest) => {
 };
 
 /**
- * Retrieve the user's cart including all items and medicine details
+ * Get user's cart items with medicine details
  */
-const getMyCart = async (userId: string) => {
+const getMyCartFromDB = async (userId: string) => {
   return await prisma.cart.findUnique({
     where: { customerId: userId },
     include: {
       cartItems: {
         include: {
-          medicine: true, // Fetch medicine details (name, price, image, etc.)
+          medicine: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              image: true,
+              brand: true,
+              stockQuantity: true,
+            },
+          },
         },
       },
     },
@@ -64,34 +88,37 @@ const getMyCart = async (userId: string) => {
 };
 
 /**
- * Remove a specific item from the cart using its ID
+ * Remove an item from cart with ownership check
  */
-const removeItemFromCart = async (itemId: string) => {
-  // 1. First, check if the cart item exists
-  const isExist = await prisma.cartItem.findUnique({
-    where: { id: itemId },
+const removeItemFromCart = async (userId: string, itemId: string) => {
+  const isExist = await prisma.cartItem.findFirst({
+    where: {
+      id: itemId,
+      cart: { customerId: userId },
+    },
   });
 
   if (!isExist) {
-    throw new Error('Cart item not found or already removed!');
+    throw new Error('Item not found in your cart!');
   }
 
-  // 2. If exists, then delete
   return await prisma.cartItem.delete({
     where: { id: itemId },
   });
 };
 
 /**
- * Delete all items from the user's cart
+ * Clear cart items (Supports Prisma transactions for Order processing)
  */
-const clearCart = async (userId: string) => {
-  const cart = await prisma.cart.findUnique({
+const clearCartFromDB = async (userId: string, tx?: any) => {
+  const db = tx || prisma;
+
+  const cart = await db.cart.findUnique({
     where: { customerId: userId },
   });
 
   if (cart) {
-    return await prisma.cartItem.deleteMany({
+    return await db.cartItem.deleteMany({
       where: { cartId: cart.id },
     });
   }
@@ -99,7 +126,7 @@ const clearCart = async (userId: string) => {
 
 export const CartService = {
   addToCart,
-  getMyCart,
+  getMyCartFromDB,
   removeItemFromCart,
-  clearCart,
+  clearCartFromDB,
 };

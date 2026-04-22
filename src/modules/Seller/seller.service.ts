@@ -1,34 +1,82 @@
 import { prisma } from '../../lib/prisma';
 
+/**
+ * Get statistics for the seller dashboard
+ */
 const getSellerDashboardStats = async (sellerId: string) => {
-  // Count total medicines for this seller
+  // 1. Count total medicines owned by this seller that are not deleted
   const totalMedicines = await prisma.medicine.count({
-    where: { sellerId, isDeleted: false },
+    where: { 
+      sellerId, 
+      isDeleted: false 
+    },
   });
 
-  // Count total orders involving this seller's products
+  // 2. Count total unique orders that contain at least one product from this seller
   const totalOrders = await prisma.order.count({
-      where: { 
-          orderItems: { some: { medicine: { sellerId } } } 
-      }
+    where: { 
+      orderItems: { 
+        some: { 
+          medicine: { sellerId } 
+        } 
+      } 
+    }
+  });
+
+  // 3. Calculate total revenue from delivered orders for this seller's products
+  const revenueData = await prisma.orderItem.aggregate({
+    where: {
+      medicine: {
+        sellerId: sellerId,
+      },
+      order: {
+        status: 'DELIVERED', // Only count revenue from completed deliveries
+      },
+    },
+    _sum: {
+      price: true, // Summing up the price column in OrderItem table
+    },
   });
 
   return {
     totalMedicines,
     totalOrders,
-    totalRevenue: 0, // Logic to be added based on schema
+    totalRevenue: revenueData._sum.price || 0,
   };
 };
 
+/**
+ * Fetch all orders associated with this seller's inventory
+ */
 const getSellerOrdersFromDB = async (sellerId: string) => {
-  // Fetch all orders for this seller's inventory
   return await prisma.order.findMany({
     where: {
-      orderItems: { some: { medicine: { sellerId } } }
+      orderItems: { 
+        some: { 
+          medicine: { sellerId } 
+        } 
+      }
     },
     include: {
-      orderItems: true,
-      customer: { select: { name: true, email: true } }
+      // Filter order items to only show products belonging to this seller
+      orderItems: {
+        where: {
+          medicine: { sellerId }
+        },
+        include: {
+          medicine: true
+        }
+      },
+      // Include basic customer information
+      customer: { 
+        select: { 
+          name: true, 
+          email: true 
+        } 
+      }
+    },
+    orderBy: {
+      createdAt: 'desc' // Show newest orders first
     }
   });
 };
