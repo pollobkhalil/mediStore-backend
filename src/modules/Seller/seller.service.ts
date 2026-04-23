@@ -1,3 +1,5 @@
+import { OrderStatus } from '@prisma/client';
+import AppError from '../../errors/AppError';
 import { prisma } from '../../lib/prisma';
 
 /**
@@ -81,7 +83,47 @@ const getSellerOrdersFromDB = async (sellerId: string) => {
   });
 };
 
+
+
+const updateSellerOrderStatusInDB = async (sellerId: string, orderId: string, status: OrderStatus) => {
+  //  Check if the order exists and contains products from this specific seller
+  const orderWithSellerItems = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      orderItems: {
+        some: {
+          medicine: {
+            sellerId: sellerId,
+          },
+        },
+      },
+    },
+  });
+
+if (!orderWithSellerItems) {
+    throw new AppError(
+      403, 
+      "You are not authorized to update this order or the order doesn't exist"
+    );
+  }
+
+  //  Update the status
+  const result = await prisma.order.update({
+    where: { id: orderId },
+    data: { status },
+    include: {
+      orderItems: {
+        where: { medicine: { sellerId } },
+        include: { medicine: true }
+      }
+    }
+  });
+
+  return result;
+};
+
 export const sellerService = {
   getSellerDashboardStats,
-  getSellerOrdersFromDB
+  getSellerOrdersFromDB,
+  updateSellerOrderStatusInDB
 };

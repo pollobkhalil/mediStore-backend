@@ -63,7 +63,7 @@ const getAllOrders = catchAsync(async (req: Request, res: Response) => {
 const updateOrderStatus = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
-  const result = await orderService.updateOrderStatusInDB(id, status); // Need to add in service
+  const result = await orderService.updateOrderStatusInDB(id as string, status); 
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

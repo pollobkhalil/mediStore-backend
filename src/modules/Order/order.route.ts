@@ -32,12 +32,12 @@ router.get(
 
 // Update order status (For Admin/Seller to mark as SHIPPED/DELIVERED)
 router.patch(
-  '/:id/status',
-  auth(UserRole.ADMIN, UserRole.SELLER),
+  '/:id',
+  auth(UserRole.SELLER),
   orderController.updateOrderStatus 
 );
 
-// --- Shared Routes ---
+
 
 // Get single order details
 router.get(

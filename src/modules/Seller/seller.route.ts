@@ -15,4 +15,7 @@ router.get('/medicines', auth(UserRole.SELLER), medicineController.getMyMedicine
 // Route: Get all orders for this seller
 router.get('/orders', auth(UserRole.SELLER), sellerController.getSellerOrders);
 
+router.patch('/orders/:orderId', auth(UserRole.SELLER), sellerController.updateOrderStatus);
+
+
 export const sellerRoutes = router;

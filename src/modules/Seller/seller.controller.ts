@@ -28,7 +28,24 @@ const getSellerOrders = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
+const updateOrderStatus = catchAsync(async (req, res) => {
+  const { id: sellerId } = (req as any).user;
+  const orderId  = req.params.orderId as string;
+  const { status } = req.body;
+
+  const result = await sellerService.updateSellerOrderStatusInDB(sellerId, orderId, status);
+
+  sendResponse(res, {
+     statusCode: 200,
+    success: true,
+    message: 'Order status updated successfully',
+    data: result,
+  });
+});
+
 export const sellerController = {
   getDashboardStats,
-  getSellerOrders
+  getSellerOrders,
+  updateOrderStatus
 };

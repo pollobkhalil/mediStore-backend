@@ -2,7 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { OrderStatus } from '@prisma/client';
 import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
-import { CartService } from '../Cart/cart.service'; // CartService ইমপোর্ট করুন
+import { CartService } from '../Cart/cart.service'; 
 
 /**
  * Create a new order with stock validation and automatic cart clearing
@@ -13,7 +13,7 @@ const createOrderInDB = async (userId: string, payload: any) => {
   return await prisma.$transaction(async (tx) => {
     let calculatedTotalAmount = 0;
 
-    // 1. Validate Stock and Calculate Total Amount
+    //  Validate Stock and Calculate Total Amount
     for (const item of items) {
       const medicine = await tx.medicine.findUnique({
         where: { id: item.medicineId },
@@ -45,7 +45,7 @@ const createOrderInDB = async (userId: string, payload: any) => {
       item.price = medicine.price;
     }
 
-    //  Create Order and OrderItems
+    // Create Order and OrderItems
     const order = await tx.order.create({
       data: {
         customerId: userId,
