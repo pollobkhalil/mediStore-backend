@@ -7,45 +7,61 @@ import { CartService } from '../Cart/cart.service';
 /**
  * Create a new order with stock validation and automatic cart clearing
  */
-const createOrderInDB = async (userId: string, payload: any) => {
-  const { items, shippingAddress, contactNumber } = payload;
+const createOrderInDB = async (userId: string, payload: { shippingAddress: string, contactNumber: string }) => {
+  const { shippingAddress, contactNumber } = payload;
 
   return await prisma.$transaction(async (tx) => {
-    let calculatedTotalAmount = 0;
-
-    //  Validate Stock and Calculate Total Amount
-    for (const item of items) {
-      const medicine = await tx.medicine.findUnique({
-        where: { id: item.medicineId },
-      });
-
-      if (!medicine) {
-        throw new AppError(httpStatus.NOT_FOUND, `Medicine not found with ID: ${item.medicineId}`);
+    
+    
+    const cart = await tx.cart.findUnique({
+      where: { customerId: userId },
+      include: {
+        cartItems: {
+          include: { medicine: true } 
+        }
       }
+    });
 
-      if (medicine.stockQuantity < item.quantity) {
+   
+    if (!cart || cart.cartItems.length === 0) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Your cart is empty!");
+    }
+
+    let calculatedTotalAmount = 0;
+    const orderItemsToCreate = [];
+
+   
+    for (const cartItem of cart.cartItems) {
+      const medicine = cartItem.medicine;
+
+    
+      if (medicine.stockQuantity < cartItem.quantity) {
         throw new AppError(
           httpStatus.BAD_REQUEST, 
           `Insufficient stock for ${medicine.name}. Available: ${medicine.stockQuantity}`
         );
       }
 
-      // Calculate total amount based on DB price for security
-      calculatedTotalAmount += medicine.price * item.quantity;
+   
+      calculatedTotalAmount += medicine.price * cartItem.quantity;
 
-      // Decrement stock
+     
       await tx.medicine.update({
-        where: { id: item.medicineId },
+        where: { id: medicine.id },
         data: {
-          stockQuantity: { decrement: item.quantity },
+          stockQuantity: { decrement: cartItem.quantity },
         },
       });
 
-      // Temporarily store the price for OrderItem creation
-      item.price = medicine.price;
+      
+      orderItemsToCreate.push({
+        medicineId: cartItem.medicineId,
+        quantity: cartItem.quantity,
+        price: medicine.price, 
+      });
     }
 
-    // Create Order and OrderItems
+  
     const order = await tx.order.create({
       data: {
         customerId: userId,
@@ -54,11 +70,7 @@ const createOrderInDB = async (userId: string, payload: any) => {
         contactNumber,
         status: OrderStatus.PENDING,
         orderItems: {
-          create: items.map((item: any) => ({
-            medicineId: item.medicineId,
-            quantity: item.quantity,
-            price: item.price, 
-          })),
+          create: orderItemsToCreate,
         },
       },
       include: {
@@ -66,8 +78,7 @@ const createOrderInDB = async (userId: string, payload: any) => {
       },
     });
 
-    //  Clear User's Cart using CartService
-   
+    
     await CartService.clearCartFromDB(userId, tx);
 
     return order;

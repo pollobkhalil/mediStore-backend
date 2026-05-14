@@ -26,24 +26,30 @@ const getSellerDashboardStats = async (sellerId: string) => {
   });
 
   // 3. Calculate total revenue from delivered orders for this seller's products
-  const revenueData = await prisma.orderItem.aggregate({
+  const revenueData = await prisma.orderItem.findMany({
     where: {
       medicine: {
         sellerId: sellerId,
       },
       order: {
         status: 'DELIVERED', // Only count revenue from completed deliveries
+        
       },
     },
-    _sum: {
-      price: true, // Summing up the price column in OrderItem table
+    select: {
+      price: true,
+      quantity: true,
     },
   });
+
+  const totalRevenue = revenueData.reduce((acc, item) => {
+    return acc + (item.price * item.quantity);
+  }, 0);
 
   return {
     totalMedicines,
     totalOrders,
-    totalRevenue: revenueData._sum.price || 0,
+    totalRevenue
   };
 };
 
